@@ -47,10 +47,51 @@ class ShowArticle(Resource):
             return make_response(article_json, 200)
 
         return {'message': 'Maximum pageview limit reached'}, 401
+# login session
+class Login(Resource):
+    def post(self):
+        data = request.get_json()
+
+        if 'username' not in data:
+            return {'message': 'Username is required'}, 400
+
+        user = User.query.filter_by(username=data['username']).first()
+
+        if not user:
+            return {'message': 'User not found'}, 404
+
+        session['user_id'] = user.id  # Correctly set session with user_id
+        return user.to_dict(), 200
+
+        
+# logout session
+class Logout(Resource):
+    def delete(self):
+        session['user_id'] = None
+        return {'message': 'Logged out successfully'}, 204
+# check session    
+class CheckSession(Resource):
+    def get(self):
+        # Check if 'user_id' is in session
+        user_id = session.get('user_id')  
+
+        if not user_id:
+            return {'message': '401: Not Authorized'}, 401  # User is not logged in
+
+        # Fetch user by user_id from the database
+        user = User.query.get(user_id)  
+        if not user:
+            return {'message': '401: Not Authorized'}, 401  # If no user is found, unauthorized
+
+        return {'user': user.to_dict()}, 200
+         
 
 api.add_resource(ClearSession, '/clear')
 api.add_resource(IndexArticle, '/articles')
 api.add_resource(ShowArticle, '/articles/<int:id>')
+api.add_resource(Login, '/login')
+api.add_resource(Logout, '/logout')
+api.add_resource(CheckSession, '/check_session')
 
 
 if __name__ == '__main__':
